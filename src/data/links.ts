@@ -1,0 +1,6 @@
+export const REPO_URL = 'https://github.com/0xmugi/streak-saver-web'
+export const DEMO_URL = '#dashboard'
+export const WAITLIST_URL = '#final-cta'
+export const PRIVACY_URL = '#privacy'
+export const ISSUES_URL = 'https://github.com/0xmugi/streak-saver-web/issues'
+export const LICENSE_URL = 'https://github.com/0xmugi/streak-saver-web/blob/main/LICENSE'
