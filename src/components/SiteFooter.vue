@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { REPO_URL, PRIVACY_URL, ISSUES_URL, LICENSE_URL } from '@/data/links'
+import { REPO_URL, PRIVACY_URL, ISSUES_URL, LICENSE_URL, HOME_URL, FEATURES_URL, DASHBOARD_URL, FLOW_URL } from '@/data/links'
 
 const year = new Date().getFullYear()
 const iconUrl = `${import.meta.env.BASE_URL}imgs/icon.png`
@@ -14,8 +14,12 @@ const iconUrl = `${import.meta.env.BASE_URL}imgs/icon.png`
       </div>
 
       <nav class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-        <a :href="REPO_URL" target="_blank" rel="noopener" class="transition hover:text-brand-500">GitHub</a>
+        <a :href="HOME_URL" class="transition hover:text-brand-500">Home</a>
+        <a :href="FEATURES_URL" class="transition hover:text-brand-500">Features</a>
+        <a :href="DASHBOARD_URL" class="transition hover:text-brand-500">Dashboard</a>
+        <a :href="FLOW_URL" class="transition hover:text-brand-500">Flow</a>
         <a :href="PRIVACY_URL" class="transition hover:text-brand-500">Privacy</a>
+        <a :href="REPO_URL" target="_blank" rel="noopener" class="transition hover:text-brand-500">GitHub</a>
         <a :href="LICENSE_URL" target="_blank" rel="noopener" class="transition hover:text-brand-500">License</a>
         <a :href="ISSUES_URL" target="_blank" rel="noopener" class="transition hover:text-brand-500">Issues</a>
       </nav>

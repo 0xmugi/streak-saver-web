@@ -14,7 +14,7 @@ import { DEMO_URL, REPO_URL } from '@/data/links'
         </p>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
           <a :href="DEMO_URL" class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-semibold text-brand-700 shadow-lg transition hover:bg-slate-100">
-            Open dashboard
+            Open demo
           </a>
           <a :href="REPO_URL" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl border border-white/35 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10">
             View repo
