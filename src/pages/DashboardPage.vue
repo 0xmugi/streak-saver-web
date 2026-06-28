@@ -1,36 +1,28 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount } from 'vue'
-import PageLayout from '@/components/PageLayout.vue'
-import ScreenshotsSection from '@/components/ScreenshotsSection.vue'
-import FinalCtaSection from '@/components/FinalCtaSection.vue'
+import AppPageLayout from '@/components/AppPageLayout.vue'
+import DashboardSummary from '@/components/DashboardSummary.vue'
+import AccountsBoard from '@/components/AccountsBoard.vue'
+import ActivityFeedBoard from '@/components/ActivityFeedBoard.vue'
+import { useSystemTheme } from '@/composables/useSystemTheme'
+import { managedAccounts, runtimeEvents } from '@/data/runtime'
+import { privateAppNav, ensureAuthOrRedirect } from '@/data/auth'
+import { DASHBOARD_URL } from '@/data/links'
 
-const darkMq = window.matchMedia('(prefers-color-scheme: dark)')
-
-function applyTheme(isDark: boolean) {
-  document.documentElement.classList.toggle('dark', isDark)
-}
-
-function onMqChange(e: MediaQueryListEvent) {
-  applyTheme(e.matches)
-}
-
-onMounted(() => {
-  applyTheme(darkMq.matches)
-  darkMq.addEventListener('change', onMqChange)
-})
-
-onBeforeUnmount(() => {
-  darkMq.removeEventListener('change', onMqChange)
-})
+useSystemTheme()
+ensureAuthOrRedirect(window.location.pathname)
 </script>
 
 <template>
-  <PageLayout
-    eyebrow="Dashboard"
-    title="Control panel page. Not screenshot dump."
-    intro="Dedicated page for dashboard story. Targets, run windows, recent actions, and proof surfaces live here."
+  <AppPageLayout
+    title="Dashboard"
+    subtitle="Live account health, proof trail, and recovery risk in one surface."
+    :nav="privateAppNav"
+    :current-path="DASHBOARD_URL"
   >
-    <ScreenshotsSection />
-    <FinalCtaSection />
-  </PageLayout>
+    <div class="space-y-8">
+      <DashboardSummary :accounts="managedAccounts" :events="runtimeEvents" />
+      <AccountsBoard />
+      <ActivityFeedBoard />
+    </div>
+  </AppPageLayout>
 </template>

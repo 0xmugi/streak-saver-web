@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DEMO_URL, REPO_URL } from '@/data/links'
+import { DEMO_URL } from '@/data/links'
 
 const iconUrl = `${import.meta.env.BASE_URL}imgs/icon.png`
 const heroShotUrl = `${import.meta.env.BASE_URL}imgs/Main_Secondary.jpeg`
@@ -10,29 +10,26 @@ const heroShotUrl = `${import.meta.env.BASE_URL}imgs/Main_Secondary.jpeg`
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-brand-50/70 via-transparent to-transparent dark:from-brand-900/30" />
     <div aria-hidden="true" class="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-brand-500/15 blur-3xl dark:bg-brand-500/20" />
 
-    <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:grid-cols-2 md:py-28">
-      <div>
-        <div class="mb-6 flex items-center gap-3">
-          <img :src="iconUrl" alt="Streak Saver" class="h-14 w-14 rounded-2xl shadow-md" width="56" height="56" />
-          <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-200/70 bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700 dark:border-brand-900/70 dark:bg-brand-950/50 dark:text-brand-300">
+    <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-28">
+      <div class="min-w-0">
+        <div class="mb-6 flex flex-wrap items-center gap-3">
+          <img :src="iconUrl" alt="Streak Saver" class="h-12 w-12 rounded-2xl shadow-md sm:h-14 sm:w-14" width="56" height="56" />
+          <span class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-brand-200/70 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 dark:border-brand-900/70 dark:bg-brand-950/50 dark:text-brand-300 sm:text-sm">
             web access now
           </span>
         </div>
 
-        <h1 class="max-w-xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl md:text-6xl dark:text-white">
+        <h1 class="max-w-xl text-3xl font-black tracking-tight text-slate-950 sm:text-5xl md:text-6xl dark:text-white">
           Same streak tool. Web app now.
         </h1>
 
-        <p class="mt-6 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+        <p class="mt-5 max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:mt-6 sm:text-lg sm:leading-8">
           No APK trust problem. No manual cookies. Open site, scan QR, manage streak automation from clean dashboard.
         </p>
 
-        <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a :href="DEMO_URL" class="inline-flex items-center justify-center rounded-2xl bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-xl shadow-brand-500/25 transition hover:bg-brand-600">
+        <div class="mt-8 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+          <a :href="DEMO_URL" class="inline-flex w-full items-center justify-center rounded-2xl bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-xl shadow-brand-500/25 transition hover:bg-brand-600 sm:w-auto">
             Open dashboard
-          </a>
-          <a :href="REPO_URL" target="_blank" rel="noopener" class="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-6 py-3 text-base font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-brand-800">
-            View public repo
           </a>
         </div>
 

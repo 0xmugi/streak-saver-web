@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { SummaryStat, TimelineItem, AccountCard, TargetRow, ShellNavItem } from '@/data/appShell'
+import type {
+  SummaryStat,
+  TimelineItem,
+  AccountCard,
+  TargetRow,
+  ShellNavItem,
+  ChecklistItem
+} from '@/data/appShell'
 
 withDefaults(
   defineProps<{
@@ -10,14 +17,14 @@ withDefaults(
     sectionIntro: string
     nav: ShellNavItem[]
     stats?: SummaryStat[]
-    notes?: string[]
+    checklist?: ChecklistItem[]
     cards?: AccountCard[]
     timeline?: TimelineItem[]
     rows?: TargetRow[]
   }>(),
   {
     stats: () => [],
-    notes: () => [],
+    checklist: () => [],
     cards: () => [],
     timeline: () => [],
     rows: () => []
@@ -34,9 +41,9 @@ function toneClasses(tone: 'default' | 'good' | 'warn' = 'default') {
 <template>
   <section class="border-b border-slate-200/70 bg-white dark:border-slate-800/70 dark:bg-slate-950">
     <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[220px,1fr] lg:py-20">
-      <aside class="space-y-3">
+      <aside class="min-w-0 space-y-3">
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-brand-500">{{ eyebrow }}</p>
-        <h1 class="text-4xl font-bold tracking-tight text-slate-950 dark:text-white">{{ title }}</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{{ title }}</h1>
         <p class="text-base leading-7 text-slate-600 dark:text-slate-300">{{ intro }}</p>
 
         <nav class="scroll-rail flex gap-2 overflow-x-auto pt-2 lg:block lg:space-y-2 lg:overflow-visible">
@@ -52,7 +59,7 @@ function toneClasses(tone: 'default' | 'good' | 'warn' = 'default') {
         </nav>
       </aside>
 
-      <div class="space-y-8">
+      <div class="min-w-0 space-y-8">
         <div v-if="stats.length" class="grid gap-4 md:grid-cols-3">
           <article
             v-for="stat in stats"
@@ -71,14 +78,15 @@ function toneClasses(tone: 'default' | 'good' | 'warn' = 'default') {
             <p class="mt-3 text-lg leading-8 text-slate-700 dark:text-slate-300">{{ sectionIntro }}</p>
           </div>
 
-          <div v-if="notes.length" class="mt-6 grid gap-3">
-            <div
-              v-for="note in notes"
-              :key="note"
-              class="rounded-2xl border border-slate-200/70 bg-white px-4 py-3 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+          <div v-if="checklist.length" class="mt-6 grid gap-3">
+            <article
+              v-for="item in checklist"
+              :key="item.title"
+              class="rounded-2xl border border-slate-200/70 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950"
             >
-              {{ note }}
-            </div>
+              <h3 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-950 dark:text-white">{{ item.title }}</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ item.detail }}</p>
+            </article>
           </div>
 
           <div v-if="cards.length" class="mt-6 grid gap-4 md:grid-cols-3">
@@ -87,9 +95,9 @@ function toneClasses(tone: 'default' | 'good' | 'warn' = 'default') {
               :key="card.title"
               :class="['rounded-3xl border p-5', toneClasses(card.tone)]"
             >
-              <div class="flex items-center justify-between gap-3">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h3 class="text-base font-semibold">{{ card.title }}</h3>
-                <span class="rounded-full bg-black/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] dark:bg-white/10">{{ card.status }}</span>
+                <span class="w-fit rounded-full bg-black/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] dark:bg-white/10">{{ card.status }}</span>
               </div>
               <p class="mt-3 text-sm leading-6 opacity-90">{{ card.detail }}</p>
             </article>

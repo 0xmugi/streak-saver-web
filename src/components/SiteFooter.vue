@@ -8,10 +8,9 @@ import {
   FEATURES_URL,
   DASHBOARD_URL,
   FLOW_URL,
-  LOGIN_URL,
-  CONNECT_URL,
-  TARGETS_URL,
-  SCHEDULE_URL,
+ LOGIN_URL,
+ TARGETS_URL,
+SCHEDULE_URL,
   ACTIVITY_URL
 } from '@/data/links'
 
@@ -27,8 +26,7 @@ const productLinks = [
 ]
 
 const appLinks = [
-  { label: 'Login', href: LOGIN_URL },
-  { label: 'Connect', href: CONNECT_URL },
+  { label: 'Onboarding', href: LOGIN_URL },
   { label: 'Targets', href: TARGETS_URL },
   { label: 'Schedule', href: SCHEDULE_URL },
   { label: 'Activity', href: ACTIVITY_URL }

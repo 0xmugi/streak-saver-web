@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import PageLayout from '@/components/PageLayout.vue'
-import AppShellPage from '@/components/AppShellPage.vue'
+import AppPageLayout from '@/components/AppPageLayout.vue'
+import ScheduleBoard from '@/components/ScheduleBoard.vue'
 import { useSystemTheme } from '@/composables/useSystemTheme'
-import { shellNav, scheduleTimeline } from '@/data/appShell'
+import { privateAppNav, ensureAuthOrRedirect } from '@/data/auth'
+import { SCHEDULE_URL } from '@/data/links'
 
 useSystemTheme()
+ensureAuthOrRedirect(window.location.pathname)
 </script>
 
 <template>
-  <PageLayout>
-    <AppShellPage
-      eyebrow="App shell"
-      title="Schedule page explains exact run timing."
-      intro="Warm checks, main keepalive, rescue lane, and manual escalation. No black-box cron feeling."
-      section-title="Execution window"
-      section-intro="Operator should know what fires before midnight, what retries after friction, and when alerting kicks in."
-      :nav="shellNav"
-      :timeline="scheduleTimeline"
-    />
-  </PageLayout>
+  <AppPageLayout
+    title="Schedule"
+    subtitle="Automation cadence, retry depth, and safe-mode control for tonight run."
+    :nav="privateAppNav"
+    :current-path="SCHEDULE_URL"
+  >
+    <ScheduleBoard />
+  </AppPageLayout>
 </template>

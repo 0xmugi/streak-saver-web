@@ -39,22 +39,22 @@ import { screenshots } from '@/data/screenshots'
           </div>
 
           <div class="mt-5 space-y-3">
-            <div class="flex items-center justify-between rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800">
-              <div>
+            <div class="flex flex-col gap-2 rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
                 <p class="font-semibold text-slate-950 dark:text-white">@ryu.main</p>
                 <p class="text-sm text-slate-600 dark:text-slate-300">DM streak • next run 00:14</p>
               </div>
               <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-300">active</span>
             </div>
-            <div class="flex items-center justify-between rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800">
-              <div>
+            <div class="flex flex-col gap-2 rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
                 <p class="font-semibold text-slate-950 dark:text-white">Study Group</p>
                 <p class="text-sm text-slate-600 dark:text-slate-300">Group streak • retry buffer ready</p>
               </div>
               <span class="text-sm font-semibold text-brand-600 dark:text-brand-300">queued</span>
             </div>
-            <div class="flex items-center justify-between rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800">
-              <div>
+            <div class="flex flex-col gap-2 rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
                 <p class="font-semibold text-slate-950 dark:text-white">@ella.side</p>
                 <p class="text-sm text-slate-600 dark:text-slate-300">Night window • delivery confirmed</p>
               </div>

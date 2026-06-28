@@ -24,6 +24,15 @@ html {
   font-family: var(--font-sans);
 }
 
+body {
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Trim the WebKit scrollbar on horizontal rails for a cleaner look. */
 .scroll-rail {
   scrollbar-width: thin;

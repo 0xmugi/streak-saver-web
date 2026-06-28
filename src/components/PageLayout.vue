@@ -16,8 +16,8 @@ defineProps<{
       <div class="mx-auto max-w-6xl px-4 sm:px-6">
         <div class="max-w-3xl">
           <p v-if="eyebrow" class="text-sm font-semibold uppercase tracking-[0.2em] text-brand-500">{{ eyebrow }}</p>
-          <h1 class="mt-3 text-4xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-5xl">{{ title }}</h1>
-          <p v-if="intro" class="mt-4 max-w-2xl text-lg text-slate-600 dark:text-slate-300">{{ intro }}</p>
+          <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-5xl">{{ title }}</h1>
+          <p v-if="intro" class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">{{ intro }}</p>
         </div>
       </div>
     </section>

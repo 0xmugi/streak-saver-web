@@ -20,7 +20,6 @@ export default defineConfig({
         flow: fileURLToPath(new URL('./flow/index.html', import.meta.url)),
         privacy: fileURLToPath(new URL('./privacy/index.html', import.meta.url)),
         login: fileURLToPath(new URL('./login/index.html', import.meta.url)),
-        connect: fileURLToPath(new URL('./connect/index.html', import.meta.url)),
         targets: fileURLToPath(new URL('./targets/index.html', import.meta.url)),
         schedule: fileURLToPath(new URL('./schedule/index.html', import.meta.url)),
         activity: fileURLToPath(new URL('./activity/index.html', import.meta.url))
