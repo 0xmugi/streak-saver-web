@@ -18,12 +18,19 @@ export type AppNavItem = {
 
 export type AuthStage = 'idle' | 'qr_ready' | 'device_seen' | 'syncing' | 'ready'
 
-export type AuthSession = {
+export interface AuthSession {
   status: AuthStage
-  qrSeed: string
-  startedAt: number | null
-  updatedAt: number | null
+  qrSeed?: string
+  pairingCode?: string
+  pairingDevice?: string
+  pairingRegion?: string
+  sessionId?: string
+  connectedHandle?: string
+  startedAt?: number | null
+  connectedAt?: number | null
+  updatedAt?: number | null
 }
+
 
 const AUTH_STORAGE_KEY = 'streak-saver-auth'
 

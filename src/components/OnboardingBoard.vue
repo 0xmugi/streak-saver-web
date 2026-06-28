@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { LOGIN_URL } from '@/data/links'
 import { useAuth } from '@/composables/useAuth'
-import { DASHBOARD_URL } from '@/data/links'
 
-const { authSession, isAuthed, setStage, clearAuth } = useAuth()
+const {
+  authSession,
+  isAuthed,
+  setStage,
+  clearAuth,
+} = useAuth()
 
 const queue = [
   'Render encrypted session QR',
   'Wait for TikTok app device handshake',
-  'Verify session fingerprint and sync account state'
+  'Verify session fingerprint and sync account state',
 ] as const
 
 const stageIndex: Record<typeof authSession.value.status, number> = {
@@ -16,7 +21,7 @@ const stageIndex: Record<typeof authSession.value.status, number> = {
   qr_ready: 1,
   device_seen: 2,
   syncing: 3,
-  ready: 4
+  ready: 4,
 }
 
 const stageLabel: Record<typeof authSession.value.status, string> = {
@@ -24,30 +29,43 @@ const stageLabel: Record<typeof authSession.value.status, string> = {
   qr_ready: 'QR ready',
   device_seen: 'Device detected',
   syncing: 'Syncing session',
-  ready: 'Login complete'
+  ready: 'Login complete',
 }
 
 const stageHint: Record<typeof authSession.value.status, string> = {
-  idle: 'Start QR to open pair flow. Session stays locked until device handshake finishes.',
-  qr_ready: 'Scan QR from TikTok on mobile. This step only opens temporary pairing window.',
+  idle: 'Start QR to open pair flow. Session stays locked until mobile approval lands.',
+  qr_ready: 'Phone must scan QR and enter pairing code before browser session unlocks.',
   device_seen: 'Device handshake received. Waiting for approval signal from mobile session.',
   syncing: 'Session accepted. Pulling account state, streak data, and operator metadata.',
-  ready: 'Session live. Dashboard unlocked for this browser.'
+  ready: 'Session live. Dashboard unlocked for this browser.',
 }
 
-const countdown = ref(90)
 const busy = ref(false)
+const countdown = ref(90)
 const timerId = ref<number | null>(null)
 const countdownId = ref<number | null>(null)
 
 const progressWidth = computed(() => `${Math.min(100, stageIndex[authSession.value.status] * 25)}%`)
 const sessionCode = computed(() => authSession.value.qrSeed || 'TSK-Q4F8-K9P2')
+const pairingCode = computed(() => authSession.value.pairingCode || '884 201')
+const pairingDevice = computed(() => authSession.value.pairingDevice || 'iPhone 15 Pro')
+const pairingRegion = computed(() => authSession.value.pairingRegion || 'Jakarta, ID')
+const sessionId = computed(() => authSession.value.sessionId || 'sess_9f2c4a71e8')
+const connectedHandle = computed(() => authSession.value.connectedHandle || '@streakpilot')
+const connectedAtLabel = computed(() => {
+  if (!authSession.value.connectedAt) return 'just now'
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(authSession.value.connectedAt)
+})
+
 const primaryLabel = computed(() => {
   if (busy.value) return 'Working'
   switch (authSession.value.status) {
     case 'idle': return 'Start QR'
-    case 'qr_ready': return 'Mark device scanned'
-    case 'device_seen': return 'Confirm on mobile'
+    case 'qr_ready': return 'I scanned it'
+    case 'device_seen': return 'Approve login'
     case 'syncing': return 'Syncing'
     case 'ready': return 'Open dashboard'
   }
@@ -60,6 +78,14 @@ function stopTimers() {
   countdownId.value = null
 }
 
+function randomDigits(size: number) {
+  return Array.from({ length: size }, () => Math.floor(Math.random() * 10)).join('')
+}
+
+function randomFrom<T>(items: readonly T[]) {
+  return items[Math.floor(Math.random() * items.length)]
+}
+
 function startQr() {
   stopTimers()
   clearAuth()
@@ -67,7 +93,12 @@ function startQr() {
   countdown.value = 90
   setStage('qr_ready', {
     qrSeed: `TSK-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-    startedAt: Date.now()
+    pairingCode: `${randomDigits(3)} ${randomDigits(3)}`,
+    pairingDevice: randomFrom(['iPhone 15 Pro', 'iPhone 14', 'Galaxy S24', 'TikTok Mobile Session']),
+    pairingRegion: randomFrom(['Jakarta, ID', 'Bandung, ID', 'Surabaya, ID', 'Singapore, SG']),
+    sessionId: `sess_${Math.random().toString(36).slice(2, 12)}`,
+    connectedHandle: randomFrom(['@streakpilot', '@dailykeeper', '@loopguard', '@streaksync']),
+    startedAt: Date.now(),
   })
   countdownId.value = window.setInterval(() => {
     countdown.value = Math.max(0, countdown.value - 1)
@@ -83,22 +114,21 @@ function markDeviceSeen() {
   timerId.value = window.setTimeout(() => {
     setStage('device_seen')
     busy.value = false
-  }, 900)
+  }, 1300)
 }
 
-function confirmDevice() {
+async function confirmMobile() {
   busy.value = true
   setStage('syncing')
   timerId.value = window.setTimeout(() => {
-    setStage('ready')
+    setStage('ready', {
+      connectedAt: Date.now(),
+    })
     busy.value = false
-    if (countdownId.value) window.clearInterval(countdownId.value)
-    countdownId.value = null
   }, 1800)
 }
 
-function handlePrimaryAction() {
-  if (busy.value) return
+async function handlePrimaryAction() {
   switch (authSession.value.status) {
     case 'idle':
       startQr()
@@ -107,154 +137,195 @@ function handlePrimaryAction() {
       markDeviceSeen()
       return
     case 'device_seen':
-      confirmDevice()
+      await confirmMobile()
       return
     case 'syncing':
       return
     case 'ready':
-      window.location.href = DASHBOARD_URL
+      window.location.href = LOGIN_URL.replace('/login', '/dashboard')
+      return
   }
 }
 
-onBeforeUnmount(() => stopTimers())
+watch(isAuthed, (value) => {
+  if (!value) return
+  stopTimers()
+})
+
+onBeforeUnmount(() => {
+  stopTimers()
+})
 </script>
 
 <template>
-  <section class="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-    <article class="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-slate-950">
-      <div class="border-b border-slate-200 px-6 py-5 dark:border-white/10 sm:px-8">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Session login</p>
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Pair mobile session first</h2>
+  <section class="rounded-[32px] border border-white/10 bg-[#0f1220] p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.35)] sm:p-7">
+    <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <div class="space-y-5">
+        <div class="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/45">tiktok session bridge</p>
+              <h2 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white">Connect browser with real session proof</h2>
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-white/60">QR alone does nothing. Browser waits for scan, pairing code, mobile approval, then session sync before dashboard unlocks.</p>
+            </div>
+            <div class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-xs font-medium text-emerald-200">
+              {{ stageLabel[authSession.status] }}
+            </div>
           </div>
-          <div class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {{ stageLabel[authSession.status] }}
+
+          <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/6">
+            <div class="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300 transition-all duration-500" :style="{ width: progressWidth }" />
+          </div>
+
+          <div class="mt-5 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div class="rounded-[24px] border border-white/8 bg-[#15192b] p-4">
+              <div class="flex items-center justify-between text-[11px] uppercase tracking-[0.24em] text-white/40">
+                <span>session qr</span>
+                <span v-if="authSession.status !== 'idle'">{{ countdown }}s</span>
+              </div>
+
+              <div class="mt-4 rounded-[22px] bg-white p-4 text-slate-950 shadow-inner">
+                <div class="grid grid-cols-7 gap-1.5">
+                  <div
+                    v-for="n in 49"
+                    :key="n"
+                    class="aspect-square rounded-[4px]"
+                    :class="(
+                      n % 2 === 0 || n % 5 === 0 || n % 7 === 0
+                    ) ? 'bg-slate-950' : 'bg-transparent'"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-4 space-y-2 text-sm text-white/65">
+                <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                  <span>QR token</span>
+                  <span class="font-mono text-white">{{ sessionCode }}</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                  <span>Pair code</span>
+                  <span class="font-mono text-white">{{ pairingCode }}</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                  <span>Device</span>
+                  <span class="text-white">{{ pairingDevice }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="rounded-[24px] border border-white/8 bg-[#15192b] p-4">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">auth stages</p>
+                <div class="mt-4 space-y-3">
+                  <div
+                    v-for="(item, idx) in queue"
+                    :key="item"
+                    class="rounded-[20px] border px-4 py-3 transition-all"
+                    :class="idx < stageIndex[authSession.status]
+                      ? 'border-emerald-400/30 bg-emerald-400/10 text-white'
+                      : idx === stageIndex[authSession.status]
+                        ? 'border-sky-400/35 bg-sky-400/10 text-white'
+                        : 'border-white/8 bg-white/[0.02] text-white/45'"
+                  >
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold"
+                        :class="idx < stageIndex[authSession.status]
+                          ? 'bg-emerald-300/20 text-emerald-100'
+                          : idx === stageIndex[authSession.status]
+                            ? 'bg-sky-300/20 text-sky-100'
+                            : 'bg-white/5 text-white/45'"
+                      >
+                        {{ idx + 1 }}
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium">{{ item }}</p>
+                        <p class="mt-1 text-xs text-white/45">{{ idx === stageIndex[authSession.status] ? stageHint[authSession.status] : 'waiting' }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-4 lg:grid-cols-2">
+                <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">pairing proof</p>
+                  <dl class="mt-3 space-y-3 text-sm text-white/65">
+                    <div class="flex items-center justify-between gap-3">
+                      <dt>Pairing region</dt>
+                      <dd class="text-white">{{ pairingRegion }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <dt>Session id</dt>
+                      <dd class="font-mono text-white">{{ sessionId }}</dd>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <dt>Browser unlock</dt>
+                      <dd class="text-white">{{ authSession.status === 'ready' ? 'granted' : 'locked' }}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">live session</p>
+                  <div v-if="authSession.status === 'ready'" class="mt-3 space-y-3 text-sm text-white/65">
+                    <div class="flex items-center justify-between gap-3">
+                      <span>Connected handle</span>
+                      <span class="text-white">{{ connectedHandle }}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3">
+                      <span>Approved at</span>
+                      <span class="text-white">{{ connectedAtLabel }}</span>
+                    </div>
+                    <div class="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-emerald-100">
+                      Session cookie synced. Dashboard access now unlocked on this browser.
+                    </div>
+                  </div>
+                  <div v-else class="mt-3 rounded-2xl border border-white/8 bg-[#101423] px-3 py-3 text-sm leading-6 text-white/55">
+                    No active session yet. Browser still waiting for mobile approval handshake.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="grid gap-8 px-6 py-6 sm:px-8 lg:grid-cols-[340px,1fr]">
-        <div class="space-y-4">
-          <div class="relative overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top,#f8fafc,white)] p-5 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),rgba(2,6,23,1))]">
-            <div class="absolute inset-0 opacity-60">
-              <div class="absolute left-4 top-4 h-16 w-16 rounded-2xl border border-slate-200 dark:border-white/10"></div>
-              <div class="absolute right-5 top-10 h-10 w-10 rounded-xl border border-slate-200 dark:border-white/10"></div>
-              <div class="absolute bottom-5 left-8 h-12 w-12 rounded-2xl border border-slate-200 dark:border-white/10"></div>
-              <div class="absolute bottom-8 right-6 h-20 w-20 rounded-[20px] border border-slate-200 dark:border-white/10"></div>
-            </div>
+      <aside class="space-y-4">
+        <div class="rounded-[28px] border border-white/8 bg-[#15192b] p-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">operator action</p>
+          <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em] text-white">{{ primaryLabel }}</h3>
+          <p class="mt-2 text-sm leading-6 text-white/58">{{ stageHint[authSession.status] }}</p>
 
-            <div class="relative mx-auto grid aspect-square max-w-[260px] grid-cols-6 gap-2 rounded-[28px] border border-slate-300 bg-white p-4 shadow-inner dark:border-white/10 dark:bg-slate-900">
-              <div
-                v-for="cell in 36"
-                :key="cell"
-                class="rounded-[8px] transition-all duration-500"
-                :class="[
-                  ((cell + sessionCode.length) % 5 === 0) || cell === 1 || cell === 6 || cell === 31
-                    ? 'bg-slate-950 dark:bg-white'
-                    : 'bg-slate-100 dark:bg-slate-800',
-                  authSession.status === 'syncing' ? 'animate-pulse' : ''
-                ]"
-              />
-            </div>
-          </div>
+          <button
+            type="button"
+            class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+            :disabled="busy || authSession.status === 'syncing'"
+            @click="handlePrimaryAction"
+          >
+            <span v-if="busy" class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-slate-950" />
+            {{ primaryLabel }}
+          </button>
 
-          <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-900/80">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Pair code</p>
-                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">{{ sessionCode }}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Window</p>
-                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">{{ countdown }}s</p>
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            class="mt-3 inline-flex w-full items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white"
+            @click="startQr"
+          >
+            Reset flow
+          </button>
         </div>
 
-        <div class="space-y-6">
-          <div>
-            <div class="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-              <div class="h-full rounded-full bg-slate-950 transition-all duration-700 dark:bg-white" :style="{ width: progressWidth }" />
-            </div>
-            <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ stageHint[authSession.status] }}</p>
-          </div>
-
-          <ol class="space-y-3">
-            <li
-              v-for="(item, index) in queue"
-              :key="item"
-              class="flex items-start gap-4 rounded-[22px] border px-4 py-4 transition-all duration-500"
-              :class="index < stageIndex[authSession.status] ? 'border-slate-300 bg-slate-50 dark:border-white/15 dark:bg-slate-900/70' : 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-950'"
-            >
-              <div
-                class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
-                :class="index < stageIndex[authSession.status] ? 'border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950' : 'border-slate-200 text-slate-400 dark:border-white/10 dark:text-slate-500'"
-              >
-                {{ index + 1 }}
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-slate-950 dark:text-white">{{ item }}</p>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {{ index === 0 ? 'QR appears only after fresh session boot.' : index === 1 ? 'Mobile device must acknowledge scan before session opens.' : 'Dashboard stays locked until state sync finishes.' }}
-                </p>
-              </div>
-            </li>
-          </ol>
-
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              class="inline-flex min-w-[180px] items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-              :disabled="busy || authSession.status === 'syncing'"
-              @click="handlePrimaryAction"
-            >
-              <span v-if="busy" class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white dark:border-slate-300 dark:border-t-slate-950"></span>
-              {{ primaryLabel }}
-            </button>
-
-            <button
-              type="button"
-              class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-950 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white"
-              @click="clearAuth"
-            >
-              Reset flow
-            </button>
-          </div>
+        <div class="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">why this feels real</p>
+          <ul class="mt-3 space-y-3 text-sm leading-6 text-white/58">
+            <li>QR token changes every session.</li>
+            <li>Pair code and device proof shown before unlock.</li>
+            <li>Dashboard only opens after explicit mobile approval state.</li>
+            <li>Connected session metadata stays visible after login.</li>
+          </ul>
         </div>
-      </div>
-    </article>
-
-    <article class="space-y-5 rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-slate-900/70 sm:p-7">
-      <div>
-        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Why flow looks real</p>
-        <h3 class="mt-2 text-xl font-semibold tracking-tight text-slate-950 dark:text-white">No fake instant login</h3>
-      </div>
-
-      <div class="space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-        <p>QR state appears first. Scan alone does not unlock anything.</p>
-        <p>Device acknowledge step happens after short delay. Then session sync runs before dashboard opens.</p>
-        <p>Primary button changes label per stage so user knows what happens next.</p>
-      </div>
-
-      <div class="rounded-[24px] border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-slate-950">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Unlock rule</p>
-        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Dashboard link opens only when session status reaches <span class="font-semibold text-slate-950 dark:text-white">ready</span>.
-        </p>
-        <a
-          :href="isAuthed ? DASHBOARD_URL : undefined"
-          class="mt-5 inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition"
-          :class="isAuthed
-            ? 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200'
-            : 'pointer-events-none border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-slate-950 dark:text-slate-500'"
-          :aria-disabled="!isAuthed"
-          @click.prevent="!isAuthed"
-        >
-          Open dashboard
-        </a>
-      </div>
-    </article>
+      </aside>
+    </div>
   </section>
 </template>
